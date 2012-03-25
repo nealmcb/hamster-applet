@@ -22,6 +22,7 @@ import dbus, dbus.service
 import datetime as dt
 from calendar import timegm
 import gio
+import hamster
 from lib import stuff
 
 def to_dbus_fact(fact):
@@ -45,7 +46,7 @@ class Storage(dbus.service.Object):
 
     def __init__(self, loop):
         self.bus = dbus.SessionBus()
-        bus_name = dbus.service.BusName("org.gnome.Hamster", bus=self.bus)
+        bus_name = dbus.service.BusName(hamster.BUS_NAME, bus=self.bus)
         dbus.service.Object.__init__(self, bus_name, self.__dbus_object_path__)
         self.mainloop = loop
 
@@ -63,16 +64,16 @@ class Storage(dbus.service.Object):
     def run_fixtures(self):
         pass
 
-    @dbus.service.signal("org.gnome.Hamster")
+    @dbus.service.signal(hamster.BUS_NAME)
     def TagsChanged(self): pass
 
-    @dbus.service.signal("org.gnome.Hamster")
+    @dbus.service.signal(hamster.BUS_NAME)
     def FactsChanged(self): pass
 
-    @dbus.service.signal("org.gnome.Hamster")
+    @dbus.service.signal(hamster.BUS_NAME)
     def ActivitiesChanged(self): pass
 
-    @dbus.service.signal("org.gnome.Hamster")
+    @dbus.service.signal(hamster.BUS_NAME)
     def ToggleCalled(self): pass
 
     def dispatch_overwrite(self):
@@ -82,21 +83,21 @@ class Storage(dbus.service.Object):
 
 
 
-    @dbus.service.method("org.gnome.Hamster")
+    @dbus.service.method(hamster.BUS_NAME)
     def Quit(self):
         """
         Shutdown the service
         example:
             import dbus
-            obj = dbus.SessionBus().get_object("org.gnome.Hamster", "/org/gnome/Hamster")
-            service = dbus.Interface(obj, "org.gnome.Hamster")
+            obj = dbus.SessionBus().get_object(hamster.BUS_NAME, "/org/gnome/Hamster")
+            service = dbus.Interface(obj, hamster.BUS_NAME)
             service.Quit()
         """
         #log.logger.info("Hamster Service is being shutdown")
         self.mainloop.quit()
 
 
-    @dbus.service.method("org.gnome.Hamster")
+    @dbus.service.method(hamster.BUS_NAME)
     def Toggle(self):
         """Toggle visibility of the main application window.
            If several instances are available, it will toggle them all.
@@ -105,7 +106,7 @@ class Storage(dbus.service.Object):
         self.ToggleCalled()
 
     # facts
-    @dbus.service.method("org.gnome.Hamster", in_signature='siib', out_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='siib', out_signature='i')
     def AddFact(self, fact, start_time, end_time, temporary = False):
         start_time = dt.datetime.utcfromtimestamp(start_time) if start_time else None
         end_time = dt.datetime.utcfromtimestamp(end_time) if end_time else None
@@ -122,7 +123,7 @@ class Storage(dbus.service.Object):
         return result or 0
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='i', out_signature='(iiissisasii)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='i', out_signature='(iiissisasii)')
     def GetFact(self, fact_id):
         """Get fact by id. For output format see GetFacts"""
         fact = dict(self.__get_fact(fact_id))
@@ -131,7 +132,7 @@ class Storage(dbus.service.Object):
         return to_dbus_fact(fact)
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='isiib', out_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='isiib', out_signature='i')
     def UpdateFact(self, fact_id, fact, start_time, end_time, temporary = False):
         if start_time:
             start_time = dt.datetime.utcfromtimestamp(start_time)
@@ -154,7 +155,7 @@ class Storage(dbus.service.Object):
         return result
 
 
-    @dbus.service.method("org.gnome.Hamster")
+    @dbus.service.method(hamster.BUS_NAME)
     def StopTracking(self, end_time):
         """Stops tracking the current activity"""
         end_time = dt.datetime.utcfromtimestamp(end_time)
@@ -165,7 +166,7 @@ class Storage(dbus.service.Object):
             self.FactsChanged()
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='i')
     def RemoveFact(self, fact_id):
         """Remove fact from storage by it's ID"""
         self.start_transaction()
@@ -176,7 +177,7 @@ class Storage(dbus.service.Object):
         self.end_transaction()
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='uus', out_signature='a(iiissisasii)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='uus', out_signature='a(iiissisasii)')
     def GetFacts(self, start_date, end_date, search_terms):
         """Gets facts between the day of start_date and the day of end_date.
         Parameters:
@@ -207,7 +208,7 @@ class Storage(dbus.service.Object):
         return [to_dbus_fact(fact) for fact in self.__get_facts(start, end, search_terms)]
 
 
-    @dbus.service.method("org.gnome.Hamster", out_signature='a(iiissisasii)')
+    @dbus.service.method(hamster.BUS_NAME, out_signature='a(iiissisasii)')
     def GetTodaysFacts(self):
         """Gets facts of today, respecting hamster midnight. See GetFacts for
         return info"""
@@ -216,56 +217,56 @@ class Storage(dbus.service.Object):
 
     # categories
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='s', out_signature = 'i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='s', out_signature = 'i')
     def AddCategory(self, name):
         res = self.__add_category(name)
         self.ActivitiesChanged()
         return res
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='s', out_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='s', out_signature='i')
     def GetCategoryId(self, category):
         return self.__get_category_id(category)
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='is')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='is')
     def UpdateCategory(self, id, name):
         self.__update_category(id, name)
         self.ActivitiesChanged()
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='i')
     def RemoveCategory(self, id):
         self.__remove_category(id)
         self.ActivitiesChanged()
 
 
-    @dbus.service.method("org.gnome.Hamster", out_signature='a(is)')
+    @dbus.service.method(hamster.BUS_NAME, out_signature='a(is)')
     def GetCategories(self):
         return [(category['id'], category['name']) for category in self.__get_categories()]
 
 
     # activities
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='si', out_signature = 'i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='si', out_signature = 'i')
     def AddActivity(self, name, category_id = -1):
         new_id = self.__add_activity(name, category_id)
         self.ActivitiesChanged()
         return new_id
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='isi')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='isi')
     def UpdateActivity(self, id, name, category_id):
         self.__update_activity(id, name, category_id)
         self.ActivitiesChanged()
 
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='i')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='i')
     def RemoveActivity(self, id):
         result = self.__remove_activity(id)
         self.ActivitiesChanged()
         return result
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='i', out_signature='a(isis)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='i', out_signature='a(isis)')
     def GetCategoryActivities(self, category_id = -1):
 
         return [(row['id'],
@@ -275,12 +276,12 @@ class Storage(dbus.service.Object):
                       self.__get_category_activities(category_id = category_id)]
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='s', out_signature='a(ss)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='s', out_signature='a(ss)')
     def GetActivities(self, search = ""):
         return [(row['name'], row['category'] or '') for row in self.__get_activities(search)]
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='ii', out_signature = 'b')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='ii', out_signature = 'b')
     def ChangeCategory(self, id, category_id):
         changed = self.__change_category(id, category_id)
         if changed:
@@ -288,7 +289,7 @@ class Storage(dbus.service.Object):
         return changed
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='sib', out_signature='a{sv}')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='sib', out_signature='a{sv}')
     def GetActivityByName(self, activity, category_id, resurrect = True):
         category_id = category_id or None
 
@@ -298,12 +299,12 @@ class Storage(dbus.service.Object):
             return {}
 
     # tags
-    @dbus.service.method("org.gnome.Hamster", in_signature='b', out_signature='a(isb)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='b', out_signature='a(isb)')
     def GetTags(self, only_autocomplete):
         return [(tag['id'], tag['name'], tag['autocomplete']) for tag in self.__get_tags(only_autocomplete)]
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='as', out_signature='a(isb)')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='as', out_signature='a(isb)')
     def GetTagIds(self, tags):
         tags, new_added = self.__get_tag_ids(tags)
         if new_added:
@@ -311,7 +312,7 @@ class Storage(dbus.service.Object):
         return [(tag['id'], tag['name'], tag['autocomplete']) for tag in tags]
 
 
-    @dbus.service.method("org.gnome.Hamster", in_signature='s')
+    @dbus.service.method(hamster.BUS_NAME, in_signature='s')
     def SetTagsAutocomplete(self, tags):
         changes = self.__update_autocomplete_tags(tags)
         if changes:

@@ -23,6 +23,7 @@ import datetime as dt
 from calendar import timegm
 import dbus, dbus.mainloop.glib
 import gobject
+import hamster
 from lib import stuff, trophies
 
 
@@ -69,13 +70,13 @@ class Storage(gobject.GObject):
         self.bus = dbus.SessionBus()
         self._connection = None # will be initiated on demand
 
-        self.bus.add_signal_receiver(self._on_tags_changed, 'TagsChanged', 'org.gnome.Hamster')
-        self.bus.add_signal_receiver(self._on_facts_changed, 'FactsChanged', 'org.gnome.Hamster')
-        self.bus.add_signal_receiver(self._on_activities_changed, 'ActivitiesChanged', 'org.gnome.Hamster')
-        self.bus.add_signal_receiver(self._on_toggle_called, 'ToggleCalled', 'org.gnome.Hamster')
+        self.bus.add_signal_receiver(self._on_tags_changed, 'TagsChanged', hamster.BUS_NAME)
+        self.bus.add_signal_receiver(self._on_facts_changed, 'FactsChanged', hamster.BUS_NAME)
+        self.bus.add_signal_receiver(self._on_activities_changed, 'ActivitiesChanged', hamster.BUS_NAME)
+        self.bus.add_signal_receiver(self._on_toggle_called, 'ToggleCalled', hamster.BUS_NAME)
 
         self.bus.add_signal_receiver(self._on_dbus_connection_change, 'NameOwnerChanged',
-                                     'org.freedesktop.DBus', arg0='org.gnome.Hamster')
+                                     'org.freedesktop.DBus', arg0=hamster.BUS_NAME)
     @staticmethod
     def _to_dict(columns, result_list):
         return [dict(zip(columns, row)) for row in result_list]
@@ -83,9 +84,9 @@ class Storage(gobject.GObject):
     @property
     def conn(self):
         if not self._connection:
-            self._connection = dbus.Interface(self.bus.get_object('org.gnome.Hamster',
+            self._connection = dbus.Interface(self.bus.get_object(hamster.BUS_NAME,
                                                               '/org/gnome/Hamster'),
-                                              dbus_interface='org.gnome.Hamster')
+                                              dbus_interface=hamster.BUS_NAME)
         return self._connection
 
     def _on_dbus_connection_change(self, name, old, new):

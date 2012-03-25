@@ -3,11 +3,12 @@
 
 import gobject, dbus
 from dbus.mainloop.glib import DBusGMainLoop
+import hamster
 
 DBusGMainLoop(set_as_default=True)
 loop = gobject.MainLoop()
 
-if "org.gnome.Hamster" in dbus.SessionBus().list_names():
+if hamster.BUS_NAME in dbus.SessionBus().list_names():
     print "Found hamster-service already running, exiting"
     quit()
 

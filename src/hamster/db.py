@@ -84,22 +84,23 @@ class Storage(storage.Storage):
         self.run_fixtures()
 
     def __init_db_file(self):
-        home_data_dir = os.path.realpath(os.path.join(xdg_data_home, "hamster-applet"))
-        if not os.path.exists(home_data_dir):
-            os.makedirs(home_data_dir, 0744)
+        testdb = os.getenv("HAMSTER_DB", "")
+        if testdb:
+            db_path = testdb
+        else:
+            home_data_dir = os.path.realpath(os.path.join(xdg_data_home, "hamster-applet"))
+            if not os.path.exists(home_data_dir):
+                os.makedirs(home_data_dir, 0744)
 
-        # handle the move to xdg_data_home
-        old_db_file = os.path.expanduser("~/.gnome2/hamster-applet/hamster.db")
-        new_db_file = os.path.join(home_data_dir, "hamster.db")
-        if os.path.exists(old_db_file):
-            if os.path.exists(new_db_file):
-                logging.info("Have two database %s and %s" % (new_db_file, old_db_file))
-            else:
-                os.rename(old_db_file, new_db_file)
+            db_path = os.path.join(home_data_dir, "hamster.db")
 
-
-        db_path = os.path.join(home_data_dir, "hamster.db")
-
+            # handle the move to xdg_data_home
+            old_db_path = os.path.expanduser("~/.gnome2/hamster-applet/hamster.db")
+            if os.path.exists(old_db_path):
+                if os.path.exists(db_path):
+                    logging.info("Have two database %s and %s" % (db_path, old_db_path))
+                else:
+                    os.rename(old_db_path, db_path)
 
         # check if we have a database at all
         if not os.path.exists(db_path):
