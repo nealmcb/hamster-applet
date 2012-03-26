@@ -1,0 +1,30 @@
+# Create a new temporary database and hamster service.  Insert some facts and list them back out.
+# Report any differences between a good saved run of the fact list and the current list.
+
+# Todo: add signal to kill hamster-service job if script exits early for some reason.
+
+# Ignore the fact for now that mktemp -u is unsafe - not a big risk here....
+export HAMSTER_DB=$(mktemp -u --suffix=.db)
+export PYTHON_PATH=../src
+
+../src/hamster-service &
+
+sleep 3
+
+../src/hamster-cli start 'Literature search for oil-producing algae@energyproject, Nothing practical found' "2012-01-05 10:10-2012-01-05 15:20"
+../src/hamster-cli start 'Describe new oil-producing algae idea@energyproject, Had a brainstorm this morning' "2012-01-07 8:10-2012-01-07 14:50"
+../src/hamster-cli start 'Publish oil-producing algae idea@energyproject, Seems to be working' "2012-02-05 10:10-2012-02-05 15:20"
+
+outfile=$(mktemp --suffix=.out)
+
+../src/hamster-cli list "2012-01-05 00:00-2012-02-07 00:00" > $outfile
+
+echo "Difference between good run (cli_test.out) and this one:"
+diff $outfile cli_test.out
+
+kill %1
+
+rm -f $HAMSTER_DB
+
+echo
+echo New report is in $outfile

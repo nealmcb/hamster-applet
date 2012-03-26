@@ -72,7 +72,7 @@ class HamsterClient(object):
         line_fmt = ' %*s - %*s (%*s) | %s@%s %s'
 
 
-        print_with_date = start_time.date() != start_time.date()
+        print_with_date = start_time.date() != end_time.date()
         if print_with_date:
             dates_align_width = len('xxxx-xx-xx xx:xx')
         else:
